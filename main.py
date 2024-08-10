@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
-
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -33,24 +33,61 @@ def generate_pass():
     pyperclip.copy(password)
 
 
+
+#-----------------------------find password----------------------------------#
+
+
+
+def find_pass():
+    website = web_entry.get()
+    try:
+        with open("password_ata.json") as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="ERROR!", message="NO Data File Found.")
+    else:
+        if website in data:
+            email = data[website]["Email"]
+            password = data[website]["Password"]
+            messagebox.showinfo(title=website, message=f"Email: {email}\nPassword: {password}")
+        else:
+            messagebox.showinfo(title="ERROR", message=f"NO details for {website} exists!")
+
+
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 
 def save():
     web = web_entry.get()
     mail = email_entry.get()
     password = pass_entry.get()
+    new_data = {
+        web: {
+            "Email": mail,
+            "Password": password,
+        }
+
+    }
 
     if len(web) == 0 or len(password) == 0:
-        messagebox.showinfo(title="Oops!", message="Please make sure you haven't left any fields empty.")
+        messagebox.showinfo(title="Oops", message="Please make sure you haven't left any fields empty.")
     else:
-        is_ok = messagebox.askokcancel(title=web, message=f"These are the details entered: \nEmail: {mail}\n "
-                                                          f"\nPassword: {password}\n is it ok to save? ")
-        if is_ok:
-            with open('passwordata.txt', 'a') as f:
-                f.write(f"{web} | {mail} | {password}\n")
-                f.close()
-                web_entry.delete(0, END)
-                pass_entry.delete(0, END)
+        try:
+            with open("password_ata.json", "r") as data_file:
+                #Reading old data
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open("password_ata.json", "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:
+            #Updating old data with new data
+            data.update(new_data)
+
+            with open("password_ata.json", "w") as data_file:
+                #Saving updated data
+                json.dump(data, data_file, indent=4)
+        finally:
+            web_entry.delete(0, END)
+            pass_entry.delete(0, END)
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -70,18 +107,20 @@ email_label.grid(column=0, row=2)
 password_label = Label(text='Password:')
 password_label.grid(column=0, row=3)
 
-web_entry = Entry(width=40)
-web_entry.grid(row=1, column=1, columnspan=2)
+web_entry = Entry(width=31)
+web_entry.grid(row=1, column=1)
 web_entry.focus()
-email_entry = Entry(width=40)
+email_entry = Entry(width=41)
 email_entry.grid(row=2, column=1, columnspan=2)
 email_entry.insert(END, '@gmail.com')
-pass_entry = Entry(width=22)
+pass_entry = Entry(width=31)
 pass_entry.grid(row=3, column=1)
 
-add_button = Button(text='Add', width=35, highlightthickness=0, command=save)
+add_button = Button(text='Add', width=36, command=save)
 add_button.grid(row=4, column=1, columnspan=2)
-generate_button = Button(text='Generate Password',command=generate_pass)
-generate_button.grid(row=3, column=2)
+pass_button = Button(text='Generate', command=generate_pass)
+pass_button.grid(row=3, column=2)
+search_button = Button(text=' Search ', command=find_pass)
+search_button.grid(row=1, column=2)
 
 window.mainloop()
